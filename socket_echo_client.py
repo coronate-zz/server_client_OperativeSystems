@@ -5,52 +5,67 @@ from math import sqrt
 
 from socket import error as SocketError
 import errno
+import time
 
 
 
 
-
-def RunRequest(k):
+def RunRequest(k, responses, data, message, sock):
 	# Create a TCP/IP socket
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	
+	
 
 	# Connect the socket to the port where the server is listening
-	server_address = ('localhost', 10000)
+	server_address = ('localhost', 10015)
 	try:
-		sock.connect(server_address)
-	except SocketError as e:
-		if e.errno != errno.ECONNRESET:
-			a=2
-    	else:
-    		a=3
-	pass # Handle error here.
-    
-    
-	try:
-    
-    	# Send data
-		message = 'Message '+str(k)
-		print('Sending "%s"' % message)
-		sock.sendall(message)
+		sock[k].connect(server_address)
+		    	# Send data
+		message[k] = 'User: '+str(k)
+		print('Sending "%s"' % message[k])
+		sock[k].send(message[k])
 
     	# Look for the response
 		amount_received = 0
-		amount_expected = len(message)
-		sr = ''
-    	
-		while amount_received < amount_expected:
-			data = sock.recv(16)
-			amount_received += len(data)
-			sr += data
-    			
-		print('Received "%s"' % sr)
-	except:
-		p=2
-
-	finally:
-		sock.close()
+		amount_expected = 1000000
+		responses[k] = ''
+		start=time.time()
+		now=time.time()
 		
+		while (amount_received < amount_expected) and (start+4>now):
+			data[k] = sock[k].recv(2014)
+			amount_received += len(data[k])
+			responses[k] += data[k]
+			now=time.time()
+    			
+		print('************ Received "%s" ************ \n' % responses[k])
+		sock[k].close()
+		return
+
+	except SocketError as e:
+		if e.errno != errno.ECONNRESET:
+			f=0
+			#print("Error raro")
+    	else:
+    		f=0
+    		#print("Error reset")
+	finally:
+		sock[k].close()
+		return
+		#print("DONE")
+	sock[k].close()
+	return
+
+n=15
+responses=[]
+data=[]
+message=[]
+sock=[]
+for k in range(n):
+	responses.append("")
+	data.append("")
+	message.append("")
+	sock.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 	
 #Parallel(n_jobs=2, backend="threading")(delayed(sqrt)(i ** 2) for i in range(10))
-Parallel(n_jobs=1, backend="threading")(delayed(RunRequest)(k) for k in range(12))
+Parallel(n_jobs=n, backend="threading")(delayed(RunRequest)(k, responses, data, message, sock) for k in range(n))
 
